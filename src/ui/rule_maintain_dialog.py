@@ -441,9 +441,17 @@ class RuleMaintainDialog(QDialog):
 
         layout = QVBoxLayout(tab)
 
-        layout.addWidget(QLabel("封装 → 折算系数"))
-        self._coef_list = QListWidget()
-        layout.addWidget(self._coef_list)
+        layout.addWidget(QLabel("封装 → 折算系数映射表，用于设置封装的折算倍数。"))
+
+        self._coef_table = QTableWidget(0, 2)
+        self._coef_table.setHorizontalHeaderLabels(["封装", "折算系数"])
+        self._coef_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self._coef_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self._coef_table.setColumnWidth(1, 100)
+        self._coef_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self._coef_table.setAlternatingRowColors(True)
+        self._coef_table.verticalHeader().setVisible(False)
+        layout.addWidget(self._coef_table)
 
         btns = QHBoxLayout()
         add_btn = QPushButton("新建")
@@ -460,9 +468,9 @@ class RuleMaintainDialog(QDialog):
 
         # 底部操作按钮
         bottom = QHBoxLayout()
-        import_btn = QPushButton("导入")
+        import_btn = QPushButton("导入规则")
         import_btn.clicked.connect(self._coef_import)
-        export_btn = QPushButton("导出")
+        export_btn = QPushButton("导出规则")
         export_btn.clicked.connect(self._coef_export)
         save_btn = QPushButton("保存")
         save_btn.clicked.connect(self._coef_save)
@@ -473,13 +481,13 @@ class RuleMaintainDialog(QDialog):
         bottom.addWidget(save_btn)
         layout.addLayout(bottom)
 
-        self._coef_load_list()
+        self._coef_load_table()
 
-    def _coef_load_list(self):
-        self._coef_list.clear()
-        for pkg in sorted(self._coefficients.keys()):
-            val = self._coefficients[pkg]
-            self._coef_list.addItem(f"{pkg}  →  {val}")
+    def _coef_load_table(self):
+        self._coef_table.setRowCount(len(self._coefficients))
+        for row, (pkg, val) in enumerate(sorted(self._coefficients.items())):
+            self._coef_table.setItem(row, 0, QTableWidgetItem(pkg))
+            self._coef_table.setItem(row, 1, QTableWidgetItem(str(val)))
 
     def _coef_add(self):
         pkg, ok1 = QInputDialog.getText(self, "新建封装", "封装名称:")
@@ -490,30 +498,30 @@ class RuleMaintainDialog(QDialog):
         )
         if ok2:
             self._coefficients[pkg.strip()] = val
-            self._coef_load_list()
+            self._coef_load_table()
 
     def _coef_edit(self):
-        item = self._coef_list.currentItem()
-        if not item:
+        row = self._coef_table.currentRow()
+        if row < 0:
             return
-        pkg = item.text().split("→")[0].strip()
+        pkg = self._coef_table.item(row, 0).text()
         current = self._coefficients.get(pkg, 1.0)
         val, ok = QInputDialog.getDouble(
             self, "编辑系数", f"\"{pkg}\" 的折算系数:", current, 0.0, 100.0, 2
         )
         if ok:
             self._coefficients[pkg] = val
-            self._coef_load_list()
+            self._coef_load_table()
 
     def _coef_delete(self):
-        item = self._coef_list.currentItem()
-        if not item:
+        row = self._coef_table.currentRow()
+        if row < 0:
             return
-        pkg = item.text().split("→")[0].strip()
+        pkg = self._coef_table.item(row, 0).text()
         reply = QMessageBox.question(self, "确认删除", f"删除 \"{pkg}\" 的折算系数?")
         if reply == QMessageBox.StandardButton.Yes:
             del self._coefficients[pkg]
-            self._coef_load_list()
+            self._coef_load_table()
 
     def _coef_save(self):
         save_coefficients(self._coefficients)
@@ -530,7 +538,7 @@ class RuleMaintainDialog(QDialog):
                 imported = json.load(f)
             if isinstance(imported, dict):
                 self._coefficients.update({k: float(v) for k, v in imported.items()})
-                self._coef_load_list()
+                self._coef_load_table()
                 QMessageBox.information(self, "导入成功", "系数已导入，请点击下方保存按钮。")
         except Exception as e:
             QMessageBox.critical(self, "导入失败", str(e))
@@ -565,7 +573,8 @@ class RuleMaintainDialog(QDialog):
         self._pin_table = QTableWidget(0, 2)
         self._pin_table.setHorizontalHeaderLabels(["封装", "管脚数"])
         self._pin_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self._pin_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.ResizeToContents)
+        self._pin_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self._pin_table.setColumnWidth(1, 100)
         self._pin_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self._pin_table.setAlternatingRowColors(True)
         self._pin_table.verticalHeader().setVisible(False)

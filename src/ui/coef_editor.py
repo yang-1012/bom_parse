@@ -8,11 +8,13 @@ from PySide6.QtWidgets import (
     QDialog,
     QFileDialog,
     QHBoxLayout,
+    QHeaderView,
     QInputDialog,
     QLabel,
-    QListWidget,
     QMessageBox,
     QPushButton,
+    QTableWidget,
+    QTableWidgetItem,
     QVBoxLayout,
 )
 
@@ -25,18 +27,26 @@ class CoefficientEditorDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("折算系数维护")
-        self.setMinimumSize(500, 400)
+        self.setMinimumSize(500, 450)
         self._coefficients = load_coefficients()
         self._setup_ui()
-        self._load_list()
+        self._load_table()
         self.setModal(True)
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
 
-        layout.addWidget(QLabel("封装 → 折算系数"))
-        self._list = QListWidget()
-        layout.addWidget(self._list)
+        layout.addWidget(QLabel("封装 → 折算系数映射表，用于设置封装的折算倍数。"))
+
+        self._table = QTableWidget(0, 2)
+        self._table.setHorizontalHeaderLabels(["封装", "折算系数"])
+        self._table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self._table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Fixed)
+        self._table.setColumnWidth(1, 100)
+        self._table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self._table.setAlternatingRowColors(True)
+        self._table.verticalHeader().setVisible(False)
+        layout.addWidget(self._table)
 
         btns = QHBoxLayout()
         add_btn = QPushButton("新建")
@@ -51,9 +61,9 @@ class CoefficientEditorDialog(QDialog):
         layout.addLayout(btns)
 
         bottom = QHBoxLayout()
-        import_btn = QPushButton("导入")
+        import_btn = QPushButton("导入规则")
         import_btn.clicked.connect(self._import_coeffs)
-        export_btn = QPushButton("导出")
+        export_btn = QPushButton("导出规则")
         export_btn.clicked.connect(self._export_coeffs)
         save_btn = QPushButton("保存")
         save_btn.clicked.connect(self._save)
@@ -67,11 +77,11 @@ class CoefficientEditorDialog(QDialog):
         bottom.addWidget(close_btn)
         layout.addLayout(bottom)
 
-    def _load_list(self):
-        self._list.clear()
-        for pkg in sorted(self._coefficients.keys()):
-            val = self._coefficients[pkg]
-            self._list.addItem(f"{pkg}  →  {val}")
+    def _load_table(self):
+        self._table.setRowCount(len(self._coefficients))
+        for row, (pkg, val) in enumerate(sorted(self._coefficients.items())):
+            self._table.setItem(row, 0, QTableWidgetItem(pkg))
+            self._table.setItem(row, 1, QTableWidgetItem(str(val)))
 
     def _add(self):
         pkg, ok1 = QInputDialog.getText(self, "新建封装", "封装名称:")
@@ -82,30 +92,30 @@ class CoefficientEditorDialog(QDialog):
         )
         if ok2:
             self._coefficients[pkg.strip()] = val
-            self._load_list()
+            self._load_table()
 
     def _edit(self):
-        item = self._list.currentItem()
-        if not item:
+        row = self._table.currentRow()
+        if row < 0:
             return
-        pkg = item.text().split("→")[0].strip()
+        pkg = self._table.item(row, 0).text()
         current = self._coefficients.get(pkg, 1.0)
         val, ok = QInputDialog.getDouble(
             self, "编辑系数", f"\"{pkg}\" 的折算系数:", current, 0.0, 100.0, 2
         )
         if ok:
             self._coefficients[pkg] = val
-            self._load_list()
+            self._load_table()
 
     def _delete(self):
-        item = self._list.currentItem()
-        if not item:
+        row = self._table.currentRow()
+        if row < 0:
             return
-        pkg = item.text().split("→")[0].strip()
+        pkg = self._table.item(row, 0).text()
         reply = QMessageBox.question(self, "确认删除", f"删除 \"{pkg}\" 的折算系数?")
         if reply == QMessageBox.StandardButton.Yes:
             del self._coefficients[pkg]
-            self._load_list()
+            self._load_table()
 
     def _save(self):
         save_coefficients(self._coefficients)
@@ -122,7 +132,7 @@ class CoefficientEditorDialog(QDialog):
                 imported = json.load(f)
             if isinstance(imported, dict):
                 self._coefficients.update({k: float(v) for k, v in imported.items()})
-                self._load_list()
+                self._load_table()
                 QMessageBox.information(self, "导入成功", "系数已导入，请点击保存。")
         except Exception as e:
             QMessageBox.critical(self, "导入失败", str(e))
