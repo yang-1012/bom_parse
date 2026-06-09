@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 )
 
 from src.models.device import Device
-from src.services.config_service import load_classification_rules
+from src.services.config_service import load_classification_rules, load_coefficients
 from src.ui.coef_editor import CoefficientEditorDialog
 from src.ui.confirm_dialog import ConfirmDialog
 from src.ui.force_editor import ForceEditorDialog
@@ -126,6 +126,7 @@ class MainWindow(QMainWindow):
         self._toolbar.export_result.connect(self._on_export)
         self._toolbar.rule_maintain.connect(self._on_rule_maintain)
         self._toolbar.clear_data.connect(self._on_clear)
+        self._preview_table.data_changed.connect(self._on_data_changed)
 
     def _set_status(self, msg: str):
         self._status_label.setText(msg)
@@ -203,6 +204,7 @@ class MainWindow(QMainWindow):
 
     def _on_classified(self, devices: list[Device]):
         self._devices = devices
+        self._preview_table.set_coefficients(load_coefficients())
         self._preview_table.set_devices(devices)
         self._stats_panel.update_stats(devices)
 
@@ -296,6 +298,10 @@ class MainWindow(QMainWindow):
             self._stats_panel.update_stats([])
             self._bom_path = ""
             self._set_status("数据已清除")
+
+    def _on_data_changed(self):
+        self._stats_panel.update_stats(self._devices)
+        self._set_status("数据已修改，统计已更新。")
 
     def _on_about(self):
         QMessageBox.about(
