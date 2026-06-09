@@ -1,0 +1,321 @@
+{
+  "version": "1.0",
+  "classifications": {
+    "SMT器件": {
+      "keywords": [
+        "SMT",
+        "贴片",
+        "表面贴装",
+        "SMD",
+        "Chip",
+        "0402",
+        "0603",
+        "0805",
+        "1206",
+        "贴装",
+        "回流焊",
+        "片式",
+        "无引脚",
+        "SOT-23"
+      ],
+      "exclude_keywords": [
+        "插件",
+        "Through Hole",
+        "THT",
+        "压接",
+        "Press-Fit"
+      ]
+    },
+    "插件器件": {
+      "keywords": [
+        "插件",
+        "Through Hole",
+        "THT",
+        "引脚",
+        "DIP",
+        "SIP",
+        "PIN",
+        "有引脚",
+        "插针",
+        "排针",
+        "排母",
+        "IC插座"
+      ],
+      "exclude_keywords": [
+        "SMT",
+        "压接",
+        "Press-Fit"
+      ]
+    },
+    "压接器件": {
+      "keywords": [
+        "压接",
+        "Press-Fit",
+        "压入",
+        "鱼眼孔",
+        "Pressfit"
+      ],
+      "exclude_keywords": []
+    },
+    "装配器件": {
+      "keywords": [
+        "装配",
+        "组装",
+        "Assembly",
+        "结构件",
+        "外壳",
+        "支架",
+        "螺丝",
+        "螺母",
+        "垫片",
+        "卡扣",
+        "连接器外壳",
+        "防护盖"
+      ],
+      "exclude_keywords": []
+    },
+    "通孔回流": {
+      "keywords": [
+        "通孔回流",
+        "THR",
+        "波峰焊",
+        "长脚",
+        "过孔回流"
+      ],
+      "exclude_keywords": []
+    },
+    "辅料": {
+      "keywords": [
+        "辅料",
+        "辅材",
+        "耗材",
+        "焊锡",
+        "锡膏",
+        "助焊剂",
+        "清洗剂",
+        "胶水",
+        "导热硅脂",
+        "标签",
+        "扎带",
+        "热缩管",
+        "周转盘",
+        "载带"
+      ],
+      "exclude_keywords": []
+    },
+    "测试分类": {
+      "keywords": [
+        "test"
+      ],
+      "exclude_keywords": []
+    }
+  },
+  "field_aliases": {
+    "器件编码": [
+      "器件编码",
+      "物料编号",
+      "物料代码",
+      "Part Number",
+      "PN",
+      "元件编号",
+      "料号",
+      "Material P/N",
+      "物料料号",
+      "PART编码",
+      "P/N",
+      "料号",
+      "物料号",
+      "Part_NO",
+      "PartNo",
+      "元件料号",
+      "器件编号",
+      "PartNumber",
+      "P/N",
+      "MPN",
+      "Manufacturer Part Number",
+      "商品编码",
+      "SKU",
+      "Item Number",
+      "Item",
+      "Component",
+      "Part#",
+      "PartNo",
+      "P/N",
+      "物料唯一码",
+      "产品型号"
+    ],
+    "器件描述": [
+      "器件描述",
+      "描述",
+      "Description",
+      "规格",
+      "规格型号",
+      "型号描述",
+      "器件名称",
+      "规格描述",
+      "产品描述",
+      "物料描述",
+      "品名",
+      "名称",
+      "规格说明",
+      "产品名称",
+      "器件规格",
+      "Value",
+      "Type",
+      "Part Description",
+      "Part Type",
+      "Component Description"
+    ],
+    "位号": [
+      "位号",
+      "Reference",
+      "位址",
+      "Ref Des",
+      "Reference Designator",
+      "位编号",
+      "Ref",
+      "位designator",
+      "元件位号",
+      "位号Designator",
+      "RefDes",
+      "Designator",
+      "Position",
+      "Positions",
+      "Pad",
+      "焊盘"
+    ],
+    "数量": [
+      "数量",
+      "Qty",
+      "Quantity",
+      "用量",
+      "Count",
+      "PCS",
+      "PC",
+      "Units",
+      "用量",
+      "总计",
+      "合计数量",
+      "总数量",
+      "Piece",
+      "EA",
+      "Sum"
+    ],
+    "单位": [
+      "单位",
+      "Unit",
+      "Uom",
+      "Units",
+      "UOM"
+    ],
+    "封装": [
+      "封装",
+      "Package",
+      "Footprint",
+      "Package Type",
+      "Pkg",
+      "包装",
+      "封装形式",
+      "元件封装",
+      "SMT/THT",
+      "Body Size",
+      "Case",
+      "Package Type",
+      "Mounting Type",
+      "安装方式"
+    ]
+  },
+  "classification_history": [
+    {
+      "part_number": ". . 1--->0801K007",
+      "description": "非固体插装铝电容-25V-470uF-±20%-极性-105℃-6000h-国产化专用",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->1499K01W",
+      "description": "连接器附件-导向销-1:1",
+      "classification": "插件器件"
+    },
+    {
+      "part_number": ". . 1--->1501K003",
+      "description": "肖特基二极管-15V-0.13A-0.34V-单个-SOT-23",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->1501K006",
+      "description": "开关二极管-70V-200mA-6ns-共阴-SOT-23",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->1504K00N",
+      "description": "瞬态抑制二极管-18.5V-24.4V-1500W-59.5A-CASE403或DO-214AB",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->1504K01P",
+      "description": "瞬态抑制二极管-14.2V-15.8V-300W-0A-SOT-23-国产化专用",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->1505K01G",
+      "description": "三极管-NPN-80V-0.2A-0.225W-SOT-23",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->1506K002",
+      "description": "MOSFET-N CHANNEL-60V-0.115A-7.5mΩ-20V-SOT-23-15060143",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->1506K04A",
+      "description": "MOSFET-N CHANNEL-60V-0.115A-7.5mΩ-20V-SOT-23-1506K002-国产化专用",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->1506K04G",
+      "description": "MOSFET-N Chanel-30V-150A-2.0mOhm @10V-20V-PDFN-1506K007-国产化专用",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->3303K00K",
+      "description": "温度传感器--40°C~+125°C-1.7V-5.5V-LVTTL-±0.5℃-DFN1.6x1.6-6",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->3602K03V",
+      "description": "LVCMOS-8路三态总线驱动-TSSOP20-(VCC=3.3V)(TI)5.9ns-(FSC)6.5ns-(VCC=3.0V)24mA-LVCMOS-LVCMOS-国产化专用",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->3809K00L",
+      "description": "RS232-RS232接口收发器2路-3.3V/5V-SSOP16-0.25MB/s-3809K000-国产化专用",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->3907K04D",
+      "description": "POWER MANAGEMENT-2.5 V to 18 V-Hot Swap Controller-MSOP10-国产化专用",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->3911K002",
+      "description": "Voltage Regulator-0.6V~6V-1%-QFN-14",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->4006K002",
+      "description": "FLASH-32Mbit-133MHz-512Kbits-2.7V~3.6V-SOIC8-QSPI",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->4103K001",
+      "description": "Monitor-SO8-3.3 V-0.47mW-41030073",
+      "classification": "SMT器件"
+    },
+    {
+      "part_number": ". . 1--->4204K007",
+      "description": "CPLD-BGA400P-335个UESR IO-8个全局时钟-5-3.3V/2.5V VCCINT-3.3V/2.5V/1.8V/1.5/1.2V VCCIO-4204A00T",
+      "classification": "SMT器件"
+    }
+  ],
+  "last_updated": "2026-06-08T20:54:03.888824"
+}
