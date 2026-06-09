@@ -6,7 +6,6 @@ from typing import Optional
 
 import openpyxl
 from openpyxl.styles import Alignment, Border, Font, PatternFill, Side
-from openpyxl.utils import get_column_letter
 
 from src.models.device import Device
 
@@ -76,14 +75,7 @@ def _write_detail_sheet(wb, devices: list[Device]) -> None:
         ]
         for col_idx, val in enumerate(values, 1):
             cell = ws.cell(row=row_idx, column=col_idx, value=val)
-            cell.font = CELL_FONT
             cell.border = THIN_BORDER
-            cell.alignment = CENTER
-
-    # 列宽
-    col_widths = [22, 40, 28, 8, 14, 12, 10, 10, 12, 12]
-    for i, w in enumerate(col_widths, 1):
-        ws.column_dimensions[get_column_letter(i)].width = w
 
     ws.auto_filter.ref = ws.dimensions
 
@@ -130,6 +122,4 @@ def _write_summary_sheet(wb, devices: list[Device]) -> None:
     ws.cell(row=row, column=3).border = THIN_BORDER
     ws.cell(row=row, column=3).alignment = CENTER
 
-    ws.column_dimensions["A"].width = 18
-    ws.column_dimensions["B"].width = 14
-    ws.column_dimensions["C"].width = 14
+    # 使用默认列宽

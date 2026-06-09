@@ -85,18 +85,18 @@ class ClassifyWorker(QThread):
             total = len(self.devices_raw)
 
             for i, raw in enumerate(self.devices_raw):
-                code = str(raw.get(self._col("器件编码"), "")).strip()
-                desc = str(raw.get(self._col("器件描述"), "")).strip()
+                code = _clean_str(raw.get(self._col("器件编码"), ""))
+                desc = _clean_str(raw.get(self._col("器件描述"), ""))
 
                 result = engine.classify(code, desc)
 
                 device = Device(
                     code=code,
                     description=desc,
-                    refdes=str(raw.get(self._col("位号"), "")).strip(),
+                    refdes=_clean_str(raw.get(self._col("位号"), "")),
                     quantity=self._parse_int(raw.get(self._col("数量"), "0")),
                     classification=result.category,
-                    package=str(raw.get(self._col("封装"), "")).strip(),
+                    package=_clean_str(raw.get(self._col("封装"), "")),
                     _raw=raw,
                 )
 
@@ -187,6 +187,14 @@ class ClassifyWorker(QThread):
                     break
         device.total_pads = device.t_side_count + device.b_side_count
         device.converted_qty = device.total_pads * coeff
+
+
+def _clean_str(val) -> str:
+    """将 pandas NaN 字符串转为空字符串"""
+    s = str(val).strip()
+    if s.lower() in ("nan", "nat", "none", "null", ""):
+        return ""
+    return s
 
 
 def _split_refdes(text: str) -> list[str]:
