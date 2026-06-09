@@ -9,7 +9,7 @@ from src.classifiers.rule_engine import RuleEngine
 from src.classifiers.side_detector import detect_side
 from src.models.classification import ClassificationRule
 from src.models.device import Device
-from src.parsers.bom_parser import parse_bom
+from src.parsers.bom_parser import parse_bom, parse_pin_count
 from src.parsers.coordinate_parser import parse_coordinate
 from src.services.config_service import (
     get_classifications,
@@ -17,6 +17,7 @@ from src.services.config_service import (
     load_classification_rules,
     load_coefficients,
     load_force_rules,
+    load_pin_count_rules,
 )
 from src.services.export_service import export_to_excel
 
@@ -76,10 +77,12 @@ class ClassifyWorker(QThread):
             rules_data = load_classification_rules()
             force_rules = load_force_rules()
             coefficients = load_coefficients()
+            pin_count_rules = load_pin_count_rules()
             classifications = get_classifications(rules_data)
             history = get_classification_history(rules_data)
 
             engine = RuleEngine(force_rules, history, classifications)
+            coord_lookup = self._build_coord_lookup()
 
             devices = []
             total = len(self.devices_raw)
@@ -88,19 +91,38 @@ class ClassifyWorker(QThread):
                 code = _clean_str(raw.get(self._col("器件编码"), ""))
                 desc = _clean_str(raw.get(self._col("器件描述"), ""))
 
+                # 封装: 坐标文件 COMP_DEVICE_TYPE > BOM 封装列
+                bom_pkg = _clean_str(raw.get(self._col("封装"), ""))
+                coord_pkg = ""
+                refdes_raw = _clean_str(raw.get(self._col("位号"), ""))
+                if refdes_raw and coord_lookup:
+                    refs = _split_refdes(refdes_raw)
+                    if refs:
+                        coord_pkg = coord_lookup.get(refs[0], {}).get("package", "")
+                pkg = coord_pkg if coord_pkg else bom_pkg
+
+                # 管脚数: 优先读列，否则从封装推导
+                pin_raw = raw.get(self._col("管脚数"), None)
+                if pin_raw is not None:
+                    pin_count = self._parse_int(pin_raw)
+                else:
+                    result_pin = parse_pin_count(pkg, pin_count_rules)
+                    pin_count = result_pin if result_pin is not None else 0
+
                 result = engine.classify(code, desc)
 
                 device = Device(
                     code=code,
                     description=desc,
-                    refdes=_clean_str(raw.get(self._col("位号"), "")),
+                    refdes=refdes_raw,
                     quantity=self._parse_int(raw.get(self._col("数量"), "0")),
                     classification=result.category,
-                    package=_clean_str(raw.get(self._col("封装"), "")),
+                    package=pkg,
+                    pin_count=pin_count,
                     _raw=raw,
                 )
 
-                self._assign_side_counts(device)
+                self._assign_side_counts(device, coord_lookup)
                 self._apply_coefficient(device, coefficients)
 
                 devices.append(device)
@@ -124,18 +146,72 @@ class ClassifyWorker(QThread):
         except (ValueError, TypeError):
             return 0
 
-    def _assign_side_counts(self, device: Device) -> None:
+    def _build_coord_lookup(self) -> dict[str, dict[str, str]]:
+        """从坐标文件构建 {refdes: {package, side}} 查找表"""
+        if self.coord_df is None or self.coord_df.empty:
+            return {}
+
+        refdes_keywords = ["refdes", "ref", "reference", "位号", "designator", "ref des"]
+        pkg_keywords = [
+            "comp_device_type", "comp device type", "device_type",
+            "component_type", "devicetype", "package", "footprint",
+            "pkg", "封装", "package_type", "foot_print",
+        ]
+        side_keywords = ["sym_mirror", "mirror", "side", "layer", "面"]
+
+        refdes_col = None
+        pkg_col = None
+        side_col = None
+        for col in self.coord_df.columns:
+            col_lower = col.lower()
+            if refdes_col is None and any(kw in col_lower for kw in refdes_keywords):
+                refdes_col = col
+            if pkg_col is None and any(kw in col_lower for kw in pkg_keywords):
+                pkg_col = col
+            if side_col is None and any(kw in col_lower for kw in side_keywords):
+                side_col = col
+
+        if refdes_col is None:
+            return {}
+
+        lookup = {}
+        for _, row in self.coord_df.iterrows():
+            refdes_cell = str(row.get(refdes_col, ""))
+            if not refdes_cell:
+                continue
+            pkg_val = _clean_str(row.get(pkg_col, "")) if pkg_col else ""
+            side_val = str(row.get(side_col, "")) if side_col else ""
+
+            for ref in _split_refdes(refdes_cell):
+                if ref and ref not in lookup:
+                    entry = {}
+                    if pkg_val:
+                        entry["package"] = pkg_val
+                    if side_val:
+                        entry["side"] = side_val
+                    lookup[ref] = entry
+
+        if lookup:
+            logger.info(f"坐标查找表: {len(lookup)} 个位号, "
+                        f"含封装: {sum(1 for v in lookup.values() if 'package' in v)}, "
+                        f"含面别: {sum(1 for v in lookup.values() if 'side' in v)}")
+        return lookup
+
+    def _assign_side_counts(self, device: Device,
+                            coord_lookup: dict[str, dict[str, str]]) -> None:
         refdes = device.refdes
         if not refdes:
             return
 
-        ref_list = [r.strip() for r in refdes.replace(";", ",").split(",") if r.strip()]
+        ref_list = _split_refdes(refdes)
         t_count = 0
         b_count = 0
         unknown_count = 0
 
         for ref in ref_list:
-            side = self._lookup_side(ref)
+            entry = coord_lookup.get(ref, {})
+            side_val = entry.get("side", "")
+            side = detect_side(side_val) if side_val else "?"
             if side == "T":
                 t_count += 1
             elif side == "B":
@@ -157,24 +233,6 @@ class ClassifyWorker(QThread):
             device.t_side_count = t_count
             device.b_side_count = b_count
 
-    def _lookup_side(self, ref: str) -> str:
-        if self.coord_df is None or self.coord_df.empty:
-            return "?"
-        for col in self.coord_df.columns:
-            col_lower = col.lower()
-            if any(kw in col_lower for kw in ["sym_mirror", "mirror", "side", "layer", "面"]):
-                for _, row in self.coord_df.iterrows():
-                    refdes_cell = ""
-                    for rc in self.coord_df.columns:
-                        rc_lower = rc.lower()
-                        if any(kw in rc_lower for kw in ["refdes", "ref", "reference", "位号", "designator"]):
-                            refdes_cell = str(row.get(rc, ""))
-                            break
-                    if ref in _split_refdes(refdes_cell):
-                        return detect_side(str(row.get(col, "")))
-                break
-        return "?"
-
     def _apply_coefficient(self, device: Device, coefficients: dict) -> None:
         pkg = device.package.strip()
         coeff = 1.0
@@ -185,7 +243,7 @@ class ClassifyWorker(QThread):
                 if known_pkg.lower() in pkg.lower() or pkg.lower() in known_pkg.lower():
                     coeff = float(val)
                     break
-        device.total_pads = device.t_side_count + device.b_side_count
+        device.total_pads = device.pin_count * device.quantity
         device.converted_qty = device.total_pads * coeff
 
 

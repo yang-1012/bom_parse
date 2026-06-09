@@ -223,6 +223,20 @@
       "Package Type",
       "Mounting Type",
       "安装方式"
+    ],
+    "管脚数": [
+      "管脚数",
+      "引脚数",
+      "Pin Count",
+      "PinCount",
+      "Number of Pins",
+      "Pin Qty",
+      "Pins",
+      "Pin",
+      "Pin Number",
+      "Lead Count",
+      "脚数",
+      "焊盘数"
     ]
   },
   "classification_history": [

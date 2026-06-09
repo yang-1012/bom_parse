@@ -12,7 +12,8 @@ class Device:
     classification: str = "未分类"       # 分类结果
     t_side_count: int = 0               # T面数量
     b_side_count: int = 0               # B面数量
-    total_pads: int = 0                 # 总焊点数
-    converted_qty: float = 0.0          # 折算后件数
+    pin_count: int = 0                  # 管脚数（每器件）
+    total_pads: int = 0                 # 总焊点数 = pin_count × quantity
+    converted_qty: float = 0.0          # 折算后件数 = total_pads × 系数
     package: str = ""                   # 封装类型
     _raw: dict = field(default_factory=dict, repr=False)  # 原始行数据

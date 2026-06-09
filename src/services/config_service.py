@@ -117,3 +117,13 @@ def load_coefficients() -> dict[str, float]:
 
 def save_coefficients(coeffs: dict[str, float]) -> None:
     _write_json("coefficients.json", coeffs)
+
+
+# ---- pin_count_rules.json ----
+
+def load_pin_count_rules() -> dict[str, int]:
+    return _read_json("pin_count_rules.json")
+
+
+def save_pin_count_rules(rules: dict[str, int]) -> None:
+    _write_json("pin_count_rules.json", rules)

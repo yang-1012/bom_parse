@@ -25,6 +25,8 @@ from src.services.config_service import load_classification_rules
 from src.ui.coef_editor import CoefficientEditorDialog
 from src.ui.confirm_dialog import ConfirmDialog
 from src.ui.force_editor import ForceEditorDialog
+from src.ui.pin_confirm_dialog import PinConfirmDialog
+from src.ui.pin_editor import PinEditorDialog
 from src.ui.preview_table import PreviewTable
 from src.ui.rule_editor import RuleEditorDialog
 from src.ui.stats_panel import StatsPanel
@@ -73,6 +75,7 @@ class MainWindow(QMainWindow):
         edit_menu.addAction("分类规则维护(&R)", self._on_rule_maintain)
         edit_menu.addAction("折算系数维护(&C)", self._on_coef_maintain)
         edit_menu.addAction("强制指定维护(&F)", self._on_force_maintain)
+        edit_menu.addAction("管脚数映射维护(&P)", self._on_pin_maintain)
         edit_menu.addSeparator()
         edit_menu.addAction("重新分类(&X)", self._on_parse)
 
@@ -209,6 +212,15 @@ class MainWindow(QMainWindow):
             f"未分类: {unclassified} 条"
         )
 
+        unknown_pins = sum(1 for d in devices if d.pin_count == 0 and d.package.strip())
+        if unknown_pins > 0:
+            reply = QMessageBox.question(
+                self, "管脚数待确认",
+                f"有 {unknown_pins} 个器件的管脚数无法从封装推导，是否现在进行人工确认？"
+            )
+            if reply == QMessageBox.StandardButton.Yes:
+                self._on_confirm_pins()
+
         if unclassified > 0:
             reply = QMessageBox.question(
                 self, "未分类器件",
@@ -261,6 +273,17 @@ class MainWindow(QMainWindow):
     def _on_force_maintain(self):
         dlg = ForceEditorDialog(self)
         dlg.exec()
+
+    def _on_pin_maintain(self):
+        dlg = PinEditorDialog(self)
+        dlg.exec()
+
+    def _on_confirm_pins(self):
+        dlg = PinConfirmDialog(self._devices, self)
+        dlg.exec()
+        self._preview_table.set_devices(self._devices)
+        self._stats_panel.update_stats(self._devices)
+        self._set_status("管脚数确认完成，数据已更新。")
 
     def _on_clear(self):
         reply = QMessageBox.question(self, "确认清除", "确定要清除所有数据吗？")

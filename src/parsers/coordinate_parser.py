@@ -24,7 +24,8 @@ def parse_coordinate(file_path: str) -> tuple[pd.DataFrame, str]:
     header_line = -1
     for i, line in enumerate(lines):
         lower = line.lower()
-        if "refdes" in lower or "ref des" in lower or "reference" in lower or "位号" in line:
+        if ("refdes" in lower or "ref des" in lower or "reference" in lower
+                or "comp_device_type" in lower or "位号" in line):
             header_line = i
             break
 

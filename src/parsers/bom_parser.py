@@ -44,6 +44,11 @@ def _match_column(col_name: str, alias_map: dict) -> Optional[str]:
                     "positions", "pad"}
     qty_synonyms = {"qty", "quantity", "count", "pcs", "pc", "units", "pieces",
                     "ea", "sum"}
+    pkg_synonyms = {"package", "packagetype", "footprint", "pkg",
+                    "封装", "封装形式", "元件封装", "包装", "bodysize", "case",
+                    "mountingtype", "安装方式", "smt/tht"}
+    pin_synonyms = {"pincount", "pins", "pin", "管脚数", "引脚数",
+                    "numberofpins", "pin数量", "leadcount", "脚数", "焊盘数"}
 
     if key in part_synonyms:
         return "器件编码"
@@ -53,7 +58,28 @@ def _match_column(col_name: str, alias_map: dict) -> Optional[str]:
         return "位号"
     if key in qty_synonyms:
         return "数量"
+    if key in pkg_synonyms:
+        return "封装"
+    if key in pin_synonyms:
+        return "管脚数"
 
+    return None
+
+
+def parse_pin_count(package: str, rules: dict) -> int | None:
+    """从封装名称推导管脚数，返回 None 表示无法推导"""
+    pkg_lower = package.lower().strip()
+    if not pkg_lower:
+        return None
+    for key, val in rules.items():
+        if key in pkg_lower:
+            return val
+    m = re.search(r'-(\d+)\s*$', pkg_lower)
+    if m:
+        return int(m.group(1))
+    m = re.search(r'(\d+)\s*$', pkg_lower)
+    if m:
+        return int(m.group(1))
     return None
 
 
@@ -138,7 +164,7 @@ def parse_bom(file_path: str, field_aliases: dict) -> tuple[list[dict], dict]:
         matched = _match_column(col, alias_map)
         if matched:
             column_map[col] = matched
-            logger.debug(f"列匹配: '{col}' → '{matched}'")
+            logger.info(f"列匹配: '{col}' → '{matched}'")
 
     devices_raw = df.to_dict(orient="records")
     return devices_raw, column_map

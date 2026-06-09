@@ -24,7 +24,7 @@ CENTER = Alignment(horizontal="center", vertical="center", wrap_text=True)
 
 DETAIL_HEADERS = [
     "器件编码", "器件描述", "位号", "数量",
-    "封装", "分类", "T面数量", "B面数量",
+    "封装", "管脚数", "分类", "T面数量", "B面数量",
     "总焊点数", "折算后件数",
 ]
 
@@ -69,7 +69,7 @@ def _write_detail_sheet(wb, devices: list[Device]) -> None:
     for row_idx, dev in enumerate(devices, 2):
         values = [
             dev.code, dev.description, dev.refdes, dev.quantity,
-            dev.package, dev.classification,
+            dev.package, dev.pin_count, dev.classification,
             dev.t_side_count, dev.b_side_count,
             dev.total_pads, round(dev.converted_qty, 2),
         ]
