@@ -23,10 +23,9 @@ from PySide6.QtWidgets import (
 from src.models.device import Device
 from src.services.config_service import load_classification_rules, load_coefficients
 from src.ui.coef_editor import CoefficientEditorDialog
-from src.ui.confirm_dialog import ConfirmDialog
 from src.ui.force_editor import ForceEditorDialog
-from src.ui.pin_confirm_dialog import PinConfirmDialog
 from src.ui.pin_editor import PinEditorDialog
+from src.ui.unified_confirm_dialog import UnifiedConfirmDialog
 from src.ui.preview_table import PreviewTable
 from src.ui.rule_editor import RuleEditorDialog
 from src.ui.rule_maintain_dialog import RuleMaintainDialog
@@ -209,27 +208,24 @@ class MainWindow(QMainWindow):
         self._stats_panel.update_stats(devices)
 
         unclassified = sum(1 for d in devices if d.classification == "未分类")
+        unknown_pins = sum(1 for d in devices if d.pin_count == 0 and d.package.strip())
         self._set_status(
             f"分类完成: {len(devices)} 条, "
-            f"未分类: {unclassified} 条"
+            f"未分类: {unclassified}, 管脚数待确认: {unknown_pins}"
         )
 
-        unknown_pins = sum(1 for d in devices if d.pin_count == 0 and d.package.strip())
-        if unknown_pins > 0:
+        if unknown_pins > 0 or unclassified > 0:
+            parts = []
+            if unknown_pins > 0:
+                parts.append(f"{unknown_pins} 个器件的管脚数无法从封装推导")
+            if unclassified > 0:
+                parts.append(f"{unclassified} 个器件未能自动分类")
             reply = QMessageBox.question(
-                self, "管脚数待确认",
-                f"有 {unknown_pins} 个器件的管脚数无法从封装推导，是否现在进行人工确认？"
+                self, "器件待确认",
+                f"有{'、'.join(parts)}，是否现在进行人工确认？"
             )
             if reply == QMessageBox.StandardButton.Yes:
-                self._on_confirm_pins()
-
-        if unclassified > 0:
-            reply = QMessageBox.question(
-                self, "未分类器件",
-                f"有 {unclassified} 个器件未能自动分类，是否现在进行人工确认？"
-            )
-            if reply == QMessageBox.StandardButton.Yes:
-                self._on_confirm_unclassified()
+                self._on_unified_confirm()
 
         self._tabs.setCurrentIndex(0)
 
@@ -237,8 +233,8 @@ class MainWindow(QMainWindow):
         self._progress.setRange(0, total)
         self._progress.setValue(current)
 
-    def _on_confirm_unclassified(self):
-        dlg = ConfirmDialog(self._devices, self)
+    def _on_unified_confirm(self):
+        dlg = UnifiedConfirmDialog(self._devices, self)
         dlg.exec()
         self._preview_table.set_devices(self._devices)
         self._stats_panel.update_stats(self._devices)
@@ -279,13 +275,6 @@ class MainWindow(QMainWindow):
     def _on_pin_maintain(self):
         dlg = PinEditorDialog(self)
         dlg.exec()
-
-    def _on_confirm_pins(self):
-        dlg = PinConfirmDialog(self._devices, self)
-        dlg.exec()
-        self._preview_table.set_devices(self._devices)
-        self._stats_panel.update_stats(self._devices)
-        self._set_status("管脚数确认完成，数据已更新。")
 
     def _on_clear(self):
         reply = QMessageBox.question(self, "确认清除", "确定要清除所有数据吗？")

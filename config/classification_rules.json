@@ -329,7 +329,22 @@
       "part_number": ". . 1--->4204K007",
       "description": "CPLD-BGA400P-335个UESR IO-8个全局时钟-5-3.3V/2.5V VCCINT-3.3V/2.5V/1.8V/1.5/1.2V VCCIO-4204A00T",
       "classification": "SMT器件"
+    },
+    {
+      "part_number": "4204K007",
+      "description": "CPLD-BGA400P-335个UESR IO-8个全局时钟-5-3.3V/2.5V VCCINT-3.3V/2.5V/1.8V/1.5/1.2V VCCIO-4204A00T",
+      "classification": "测试分类"
+    },
+    {
+      "part_number": "1499K01W",
+      "description": "连接器附件-导向销-1:1",
+      "classification": "测试分类"
+    },
+    {
+      "part_number": "4006K002",
+      "description": "FLASH-32Mbit-133MHz-512Kbits-2.7V~3.6V-SOIC8-QSPI",
+      "classification": "测试分类"
     }
   ],
-  "last_updated": "2026-06-09T15:01:30.734729"
+  "last_updated": "2026-06-09T17:53:43.935873"
 }

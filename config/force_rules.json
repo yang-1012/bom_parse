@@ -1,12 +1,17 @@
 {
-  ". . 1--->1003K003": {
-    "classification": "SMT器件",
-    "pin_count": 1000,
-    "package": "SPL0404A"
-  },
-  ". . 1--->4204K007": {
+  "1499K01W": {
     "classification": "测试分类",
-    "pin_count": 6060,
-    "package": "BGA400-32-2020"
+    "pin_count": 9999,
+    "package": "MGP2-0909"
+  },
+  "4103K001": {
+    "classification": "辅料",
+    "pin_count": 8888,
+    "package": "SOP8-50-150"
+  },
+  "4006K002": {
+    "classification": "辅料",
+    "pin_count": 208,
+    "package": "SOP8-50-208"
   }
 }
