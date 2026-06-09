@@ -6,6 +6,8 @@ from PySide6.QtCore import Signal
 from PySide6.QtGui import QAction, QIcon
 from PySide6.QtWidgets import QToolBar, QWidget
 
+from src.ui.rule_maintain_dialog import RuleMaintainDialog
+
 logger = logging.getLogger("ParseApp")
 
 
@@ -15,7 +17,6 @@ class MainToolBar(QToolBar):
     start_parse = Signal()
     export_result = Signal()
     rule_maintain = Signal()
-    force_edit = Signal()
     clear_data = Signal()
 
     def __init__(self, parent=None):
@@ -29,8 +30,7 @@ class MainToolBar(QToolBar):
             ("导入坐标", "导入坐标文件 (.txt)", self.import_coord),
             ("开始解析", "执行分类解析", self.start_parse),
             ("导出结果", "导出 Excel 报表", self.export_result),
-            ("规则维护", "维护分类关键词规则", self.rule_maintain),
-            ("强制指定", "维护强制指定规则", self.force_edit),
+            ("规则维护", "维护分类/强制/折算/管脚数规则", self.rule_maintain),
             ("清除数据", "清空当前数据", self.clear_data),
         ]
 

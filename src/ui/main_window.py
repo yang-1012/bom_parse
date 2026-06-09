@@ -29,6 +29,7 @@ from src.ui.pin_confirm_dialog import PinConfirmDialog
 from src.ui.pin_editor import PinEditorDialog
 from src.ui.preview_table import PreviewTable
 from src.ui.rule_editor import RuleEditorDialog
+from src.ui.rule_maintain_dialog import RuleMaintainDialog
 from src.ui.stats_panel import StatsPanel
 from src.ui.toolbar import MainToolBar
 from src.ui.workers import (
@@ -124,7 +125,6 @@ class MainWindow(QMainWindow):
         self._toolbar.start_parse.connect(self._on_parse)
         self._toolbar.export_result.connect(self._on_export)
         self._toolbar.rule_maintain.connect(self._on_rule_maintain)
-        self._toolbar.force_edit.connect(self._on_force_maintain)
         self._toolbar.clear_data.connect(self._on_clear)
 
     def _set_status(self, msg: str):
@@ -263,7 +263,7 @@ class MainWindow(QMainWindow):
         QMessageBox.information(self, "导出成功", f"Excel 已导出到:\n{output_path}")
 
     def _on_rule_maintain(self):
-        dlg = RuleEditorDialog(self)
+        dlg = RuleMaintainDialog(self)
         dlg.exec()
 
     def _on_coef_maintain(self):
