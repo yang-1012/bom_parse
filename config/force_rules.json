@@ -1,1 +1,12 @@
-{}
+{
+  ". . 1--->1003K003": {
+    "classification": "SMT器件",
+    "pin_count": 1000,
+    "package": "SPL0404A"
+  },
+  ". . 1--->4204K007": {
+    "classification": "测试分类",
+    "pin_count": 6060,
+    "package": "BGA400-32-2020"
+  }
+}

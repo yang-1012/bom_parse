@@ -101,12 +101,43 @@ def add_to_history(data: dict, part_number: str, description: str,
 
 # ---- force_rules.json ----
 
-def load_force_rules() -> dict[str, str]:
-    return _read_json("force_rules.json")
+def load_force_rules() -> dict[str, dict]:
+    """加载强制指定规则，兼容旧格式 {"编码": "分类"} → 新格式"""
+    raw = _read_json("force_rules.json")
+    result = {}
+    for code, val in raw.items():
+        if isinstance(val, str):
+            result[code] = {"classification": val, "pin_count": 0, "package": ""}
+        elif isinstance(val, dict):
+            result[code] = {
+                "classification": val.get("classification", "未分类"),
+                "pin_count": val.get("pin_count", 0),
+                "package": val.get("package", ""),
+            }
+    return result
 
 
-def save_force_rules(rules: dict[str, str]) -> None:
+def save_force_rules(rules: dict[str, dict]) -> None:
     _write_json("force_rules.json", rules)
+
+
+def upsert_force_rule(
+    code: str,
+    classification: str | None = None,
+    pin_count: int | None = None,
+    package: str | None = None,
+) -> None:
+    """更新或新增一条强制指定规则（只修改传入的字段）"""
+    rules = load_force_rules()
+    entry = rules.get(code, {"classification": "未分类", "pin_count": 0, "package": ""})
+    if classification is not None:
+        entry["classification"] = classification
+    if pin_count is not None:
+        entry["pin_count"] = pin_count
+    if package is not None:
+        entry["package"] = package
+    rules[code] = entry
+    save_force_rules(rules)
 
 
 # ---- coefficients.json ----

@@ -285,10 +285,14 @@ class RuleMaintainDialog(QDialog):
         layout = QVBoxLayout(tab)
 
         self._force_table = QTableWidget()
-        self._force_table.setColumnCount(2)
-        self._force_table.setHorizontalHeaderLabels(["器件编码", "指定分类"])
+        self._force_table.setColumnCount(4)
+        self._force_table.setHorizontalHeaderLabels(["器件编码", "分类", "管脚数", "封装"])
         self._force_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        self._force_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        for i in range(1, 4):
+            self._force_table.horizontalHeader().setSectionResizeMode(i, QHeaderView.ResizeMode.Interactive)
+        self._force_table.setColumnWidth(1, 120)
+        self._force_table.setColumnWidth(2, 80)
+        self._force_table.setColumnWidth(3, 120)
         self._force_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
         self._force_table.setAlternatingRowColors(True)
         self._force_table.verticalHeader().setVisible(False)
@@ -323,12 +327,13 @@ class RuleMaintainDialog(QDialog):
 
     def _force_load_table(self):
         self._force_table.setRowCount(len(self._force_rules))
-        for row, (code, cat) in enumerate(sorted(self._force_rules.items())):
+        for row, (code, entry) in enumerate(sorted(self._force_rules.items())):
             item = QTableWidgetItem(code)
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEditable)
             self._force_table.setItem(row, 0, item)
             combo = QComboBox()
             combo.addItems(self._force_categories)
+            cat = entry.get("classification", "未分类") if isinstance(entry, dict) else entry
             if cat in self._force_categories:
                 combo.setCurrentText(cat)
             else:
@@ -336,12 +341,30 @@ class RuleMaintainDialog(QDialog):
                 combo.setCurrentText(cat)
             self._force_table.setCellWidget(row, 1, combo)
 
+            pin_count = entry.get("pin_count", 0) if isinstance(entry, dict) else 0
+            self._force_table.setItem(row, 2, QTableWidgetItem(str(pin_count) if pin_count else ""))
+
+            pkg = entry.get("package", "") if isinstance(entry, dict) else ""
+            self._force_table.setItem(row, 3, QTableWidgetItem(pkg))
+
     def _force_collect(self):
         for row in range(self._force_table.rowCount()):
             code_item = self._force_table.item(row, 0)
             combo = self._force_table.cellWidget(row, 1)
+            pin_item = self._force_table.item(row, 2)
+            pkg_item = self._force_table.item(row, 3)
             if code_item and combo:
-                self._force_rules[code_item.text()] = combo.currentText()
+                code = code_item.text()
+                try:
+                    pin = int(pin_item.text()) if pin_item and pin_item.text().strip() else 0
+                except ValueError:
+                    pin = 0
+                pkg = pkg_item.text().strip() if pkg_item else ""
+                self._force_rules[code] = {
+                    "classification": combo.currentText(),
+                    "pin_count": pin,
+                    "package": pkg,
+                }
 
     def _force_add(self):
         code, ok1 = QInputDialog.getText(self, "添加强制指定", "器件编码:")
@@ -355,7 +378,7 @@ class RuleMaintainDialog(QDialog):
             self, "选择分类", "分类:", self._force_categories, 0, False
         )
         if ok2:
-            self._force_rules[code] = cat
+            self._force_rules[code] = {"classification": cat, "pin_count": 0, "package": ""}
             self._force_load_table()
 
     def _force_delete(self):

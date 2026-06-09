@@ -11,7 +11,7 @@ logger = logging.getLogger("ParseApp")
 class RuleEngine:
     def __init__(
         self,
-        force_rules: dict[str, str],
+        force_rules: dict[str, dict],
         history: list[dict],
         classifications: dict[str, ClassificationRule],
     ):
@@ -27,12 +27,16 @@ class RuleEngine:
             index[key] = entry.get("classification", "未分类")
         return index
 
+    def get_force_override(self, code: str) -> dict | None:
+        """获取器件编码对应的强制覆盖规则（含 classification/pin_count/package）"""
+        return self._force_rules.get(code.strip())
+
     def classify(self, code: str, description: str) -> ClassificationResult:
         # 1. 强制指定（精确匹配器件编码）
         force_key = code.strip()
         if force_key in self._force_rules:
             return ClassificationResult(
-                category=self._force_rules[force_key],
+                category=self._force_rules[force_key].get("classification", "未分类"),
                 match_type="force",
             )
 

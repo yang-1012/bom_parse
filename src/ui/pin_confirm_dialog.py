@@ -17,7 +17,11 @@ from PySide6.QtWidgets import (
 )
 
 from src.models.device import Device
-from src.services.config_service import load_pin_count_rules, save_pin_count_rules
+from src.services.config_service import (
+    load_pin_count_rules,
+    save_pin_count_rules,
+    upsert_force_rule,
+)
 
 logger = logging.getLogger("ParseApp")
 
@@ -99,6 +103,13 @@ class PinConfirmDialog(QDialog):
                 dev.converted_qty = dev.total_pads * coeff
                 # 记录到映射表（学习）
                 self._pin_rules[dev.package.strip().lower()] = pin
+                # 同步记录到强制指定规则
+                upsert_force_rule(
+                    code=dev.code,
+                    classification=dev.classification,
+                    pin_count=pin,
+                    package=dev.package,
+                )
                 count += 1
 
         if count > 0:

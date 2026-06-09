@@ -14,7 +14,11 @@ from PySide6.QtWidgets import (
 )
 
 from src.models.device import Device
-from src.services.config_service import load_classification_rules, get_classifications
+from src.services.config_service import (
+    get_classifications,
+    load_classification_rules,
+    upsert_force_rule,
+)
 
 logger = logging.getLogger("ParseApp")
 
@@ -143,6 +147,7 @@ class PreviewTable(QTableWidget):
             dev.package = new_val
             self._recalc_device(dev)
             self._refresh_row(row, dev)
+            self._save_force_rule(dev)
         elif col == 5:  # 管脚数
             try:
                 dev.pin_count = int(float(new_val))
@@ -150,11 +155,22 @@ class PreviewTable(QTableWidget):
                 dev.pin_count = 0
             self._recalc_device(dev)
             self._refresh_row(row, dev)
+            self._save_force_rule(dev)
         elif col == 6:  # 分类
             dev.classification = new_val if new_val else "未分类"
             self._refresh_row(row, dev)
+            self._save_force_rule(dev)
 
         self.data_changed.emit()
+
+    @staticmethod
+    def _save_force_rule(dev: Device):
+        upsert_force_rule(
+            code=dev.code,
+            classification=dev.classification,
+            pin_count=dev.pin_count,
+            package=dev.package,
+        )
 
     def _recalc_device(self, dev: Device):
         pkg = dev.package.strip()

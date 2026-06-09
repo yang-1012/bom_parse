@@ -22,6 +22,7 @@ from src.services.config_service import (
     get_classifications,
     load_classification_rules,
     save_classification_rules,
+    upsert_force_rule,
 )
 
 logger = logging.getLogger("ParseApp")
@@ -105,6 +106,12 @@ class ConfirmDialog(QDialog):
             if cat and cat != "（跳过）":
                 dev.classification = cat
                 add_to_history(rules_data, dev.code, dev.description, cat)
+                upsert_force_rule(
+                    code=dev.code,
+                    classification=cat,
+                    pin_count=dev.pin_count,
+                    package=dev.package,
+                )
                 count += 1
 
         if count > 0:

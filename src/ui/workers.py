@@ -91,7 +91,11 @@ class ClassifyWorker(QThread):
                 code = _clean_str(raw.get(self._col("器件编码"), ""))
                 desc = _clean_str(raw.get(self._col("器件描述"), ""))
 
-                # 封装: 坐标文件 COMP_DEVICE_TYPE > BOM 封装列
+                # 强制覆盖规则（最高优先级）
+                force_ov = engine.get_force_override(code)
+
+                # 封装: force > 坐标文件 COMP_DEVICE_TYPE > BOM 封装列
+                force_pkg = force_ov.get("package", "") if force_ov else ""
                 bom_pkg = _clean_str(raw.get(self._col("封装"), ""))
                 coord_pkg = ""
                 refdes_raw = _clean_str(raw.get(self._col("位号"), ""))
@@ -99,15 +103,18 @@ class ClassifyWorker(QThread):
                     refs = _split_refdes(refdes_raw)
                     if refs:
                         coord_pkg = coord_lookup.get(refs[0], {}).get("package", "")
-                pkg = coord_pkg if coord_pkg else bom_pkg
+                pkg = force_pkg if force_pkg else (coord_pkg if coord_pkg else bom_pkg)
 
-                # 管脚数: 优先读列，否则从封装推导
-                pin_raw = raw.get(self._col("管脚数"), None)
-                if pin_raw is not None:
-                    pin_count = self._parse_int(pin_raw)
+                # 管脚数: force > BOM 管脚数列 > pin_count_rules 推导
+                if force_ov and force_ov.get("pin_count", 0) > 0:
+                    pin_count = force_ov["pin_count"]
                 else:
-                    result_pin = parse_pin_count(pkg, pin_count_rules)
-                    pin_count = result_pin if result_pin is not None else 0
+                    pin_raw = raw.get(self._col("管脚数"), None)
+                    if pin_raw is not None:
+                        pin_count = self._parse_int(pin_raw)
+                    else:
+                        result_pin = parse_pin_count(pkg, pin_count_rules)
+                        pin_count = result_pin if result_pin is not None else 0
 
                 result = engine.classify(code, desc)
 
