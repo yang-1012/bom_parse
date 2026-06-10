@@ -1,17 +1,1 @@
-{
-  "1499K01W": {
-    "classification": "测试分类",
-    "pin_count": 9999,
-    "package": "MGP2-0909"
-  },
-  "4103K001": {
-    "classification": "辅料",
-    "pin_count": 8888,
-    "package": "SOP8-50-150"
-  },
-  "4006K002": {
-    "classification": "辅料",
-    "pin_count": 208,
-    "package": "SOP8-50-208"
-  }
-}
+{}

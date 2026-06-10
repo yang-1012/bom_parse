@@ -74,12 +74,6 @@ def parse_pin_count(package: str, rules: dict) -> int | None:
     for key, val in rules.items():
         if key in pkg_lower:
             return val
-    m = re.search(r'-(\d+)\s*$', pkg_lower)
-    if m:
-        return int(m.group(1))
-    m = re.search(r'(\d+)\s*$', pkg_lower)
-    if m:
-        return int(m.group(1))
     return None
 
 

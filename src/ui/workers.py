@@ -105,16 +105,12 @@ class ClassifyWorker(QThread):
                         coord_pkg = coord_lookup.get(refs[0], {}).get("package", "")
                 pkg = force_pkg if force_pkg else (coord_pkg if coord_pkg else bom_pkg)
 
-                # 管脚数: force > BOM 管脚数列 > pin_count_rules 推导
+                # 管脚数: force > pin_count_rules 推导
                 if force_ov and force_ov.get("pin_count", 0) > 0:
                     pin_count = force_ov["pin_count"]
                 else:
-                    pin_raw = raw.get(self._col("管脚数"), None)
-                    if pin_raw is not None:
-                        pin_count = self._parse_int(pin_raw)
-                    else:
-                        result_pin = parse_pin_count(pkg, pin_count_rules)
-                        pin_count = result_pin if result_pin is not None else 0
+                    result_pin = parse_pin_count(pkg, pin_count_rules)
+                    pin_count = result_pin if result_pin is not None else 0
 
                 result = engine.classify(code, desc)
 
