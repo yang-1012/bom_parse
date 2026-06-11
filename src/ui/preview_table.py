@@ -174,7 +174,7 @@ class PreviewTable(QTableWidget):
 
     def _recalc_device(self, dev: Device):
         pkg = dev.package.strip()
-        coeff = 1.0
+        coeff = max(dev.pin_count, 1)
         if pkg and pkg in self._coefficients:
             coeff = float(self._coefficients[pkg])
         elif pkg:
@@ -183,7 +183,7 @@ class PreviewTable(QTableWidget):
                     coeff = float(val)
                     break
         dev.total_pads = dev.pin_count * dev.quantity
-        dev.converted_qty = dev.total_pads * coeff
+        dev.converted_qty = dev.total_pads // coeff
 
     def _refresh_row(self, row: int, dev: Device):
         """更新行中因联动可能变化的单元格（管脚数、总焊点数、折算件数、分类颜色）"""

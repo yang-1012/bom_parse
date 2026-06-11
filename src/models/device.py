@@ -14,6 +14,6 @@ class Device:
     b_side_count: int = 0               # B面数量
     pin_count: int = 0                  # 管脚数（每器件）
     total_pads: int = 0                 # 总焊点数 = pin_count × quantity
-    converted_qty: float = 0.0          # 折算后件数 = total_pads × 系数
+    converted_qty: float = 0.0          # 折算后件数 = total_pads // 系数（默认系数=管脚数）
     package: str = ""                   # 封装类型
     _raw: dict = field(default_factory=dict, repr=False)  # 原始行数据

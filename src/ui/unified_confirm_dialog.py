@@ -155,8 +155,8 @@ class UnifiedConfirmDialog(QDialog):
                 dev.pin_count = pin
                 dev.total_pads = dev.pin_count * dev.quantity
                 pkg = dev.package.strip().lower()
-                coeff = float(coeffs.get(pkg, 1.0))
-                dev.converted_qty = dev.total_pads * coeff
+                coeff = float(coeffs.get(pkg, dev.pin_count))
+                dev.converted_qty = dev.total_pads // coeff
                 self._pin_rules[pkg] = pin
                 upsert_force_rule(
                     code=dev.code,

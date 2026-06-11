@@ -238,7 +238,7 @@ class ClassifyWorker(QThread):
 
     def _apply_coefficient(self, device: Device, coefficients: dict) -> None:
         pkg = device.package.strip()
-        coeff = 1.0
+        coeff = max(device.pin_count, 1)
         if pkg and pkg in coefficients:
             coeff = float(coefficients[pkg])
         elif pkg:
@@ -247,7 +247,7 @@ class ClassifyWorker(QThread):
                     coeff = float(val)
                     break
         device.total_pads = device.pin_count * device.quantity
-        device.converted_qty = device.total_pads * coeff
+        device.converted_qty = device.total_pads // coeff
 
 
 def _clean_str(val) -> str:
