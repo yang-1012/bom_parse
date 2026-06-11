@@ -21,6 +21,8 @@ CATEGORY_ORDER = [
     "通孔回流", "辅料", "测试分类", "未分类",
 ]
 
+HEADERS = ["分类", "器件行数", "总数量", "T面件数", "B面件数", "折算后件数"]
+
 
 class StatsPanel(QWidget):
     def __init__(self, parent=None):
@@ -28,10 +30,8 @@ class StatsPanel(QWidget):
         layout = QVBoxLayout(self)
         layout.setContentsMargins(4, 4, 4, 4)
 
-        self._table = QTableWidget(0, 5)
-        self._table.setHorizontalHeaderLabels([
-            "分类", "种类数", "折算件数", "占比(种类)", "占比(件数)"
-        ])
+        self._table = QTableWidget(0, len(HEADERS))
+        self._table.setHorizontalHeaderLabels(HEADERS)
         self._table.setEditTriggers(QAbstractItemView.EditTrigger.NoEditTriggers)
         self._table.setSelectionBehavior(QAbstractItemView.SelectionBehavior.SelectRows)
         self._table.setAlternatingRowColors(True)
@@ -39,54 +39,58 @@ class StatsPanel(QWidget):
         self._table.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
 
         header = self._table.horizontalHeader()
-        header.setStretchLastSection(True)
-        header.setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
-        for i in range(1, 5):
-            header.setSectionResizeMode(i, QHeaderView.ResizeMode.ResizeToContents)
+        for i in range(len(HEADERS)):
+            header.setSectionResizeMode(i, QHeaderView.ResizeMode.Stretch)
 
         layout.addWidget(self._table)
 
     def update_stats(self, devices: list[Device]):
         cat_types = defaultdict(int)
+        cat_qty = defaultdict(int)
+        cat_t = defaultdict(int)
+        cat_b = defaultdict(int)
         cat_qtys = defaultdict(float)
         for dev in devices:
             cat_types[dev.classification] += 1
+            cat_qty[dev.classification] += dev.quantity
+            cat_t[dev.classification] += dev.t_side_count
+            cat_b[dev.classification] += dev.b_side_count
             cat_qtys[dev.classification] += dev.converted_qty
-
-        total_types = sum(cat_types.values())
-        total_qty = sum(cat_qtys.values())
 
         rows = []
         for cat in CATEGORY_ORDER:
             if cat in cat_types or cat == "未分类":
-                rows.append((cat, cat_types.get(cat, 0), cat_qtys.get(cat, 0.0)))
+                rows.append(cat)
 
-        # 兜底：order 中没有的类别也加上
         for cat in sorted(cat_types.keys()):
             if cat not in CATEGORY_ORDER:
-                rows.append((cat, cat_types[cat], cat_qtys[cat]))
+                rows.append(cat)
 
-        self._table.setRowCount(len(rows) + 1)  # +1 for total row
+        self._table.setRowCount(len(rows) + 1)
 
-        for r, (cat, t_count, qty) in enumerate(rows):
-            t_pct = f"{t_count / total_types * 100:.1f}%" if total_types else "0%"
-            q_pct = f"{qty / total_qty * 100:.1f}%" if total_qty else "0%"
-
+        for r, cat in enumerate(rows):
             cat_item = QTableWidgetItem(cat)
             if cat == "未分类":
                 cat_item.setForeground(QBrush(QColor(200, 0, 0)))
             self._table.setItem(r, 0, cat_item)
-            self._table.setItem(r, 1, QTableWidgetItem(str(t_count)))
-            self._table.setItem(r, 2, QTableWidgetItem(f"{qty:.2f}"))
-            self._table.setItem(r, 3, QTableWidgetItem(t_pct))
-            self._table.setItem(r, 4, QTableWidgetItem(q_pct))
+            self._table.setItem(r, 1, QTableWidgetItem(str(cat_types[cat])))
+            self._table.setItem(r, 2, QTableWidgetItem(str(cat_qty[cat])))
+            self._table.setItem(r, 3, QTableWidgetItem(str(cat_t[cat])))
+            self._table.setItem(r, 4, QTableWidgetItem(str(cat_b[cat])))
+            self._table.setItem(r, 5, QTableWidgetItem(f"{cat_qtys[cat]:.2f}"))
 
         # 合计行
         total_row = len(rows)
         bold = QBrush(QColor(0, 0, 0))
-        for col, text in enumerate([
-            "合计", str(total_types), f"{total_qty:.2f}", "100%", "100%"
-        ]):
+        totals = [
+            "合计",
+            str(sum(cat_types.values())),
+            str(sum(cat_qty.values())),
+            str(sum(cat_t.values())),
+            str(sum(cat_b.values())),
+            f"{sum(cat_qtys.values()):.2f}",
+        ]
+        for col, text in enumerate(totals):
             item = QTableWidgetItem(text)
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
             font = item.font()

@@ -126,6 +126,8 @@ class ClassifyWorker(QThread):
                 )
 
                 self._assign_side_counts(device, coord_lookup)
+                if device.t_side_count > 0 or device.b_side_count > 0:
+                    device.quantity = device.t_side_count + device.b_side_count
                 self._apply_coefficient(device, coefficients)
 
                 devices.append(device)

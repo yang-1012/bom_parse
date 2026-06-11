@@ -44,18 +44,28 @@ def export_to_excel(
     output_path = os.path.join(output_dir, f"{base_name}_解析.xlsx")
 
     wb = openpyxl.Workbook()
+    # 移除默认空白 sheet
+    wb.remove(wb.active)
 
-    _write_detail_sheet(wb, devices)
+    _write_detail_sheet(wb, devices, "全部分类")
     _write_summary_sheet(wb, devices)
+
+    # 按分类分组，每个分类一个独立 sheet
+    from collections import defaultdict
+    cats = defaultdict(list)
+    for dev in devices:
+        cats[dev.classification].append(dev)
+    for cat_name in sorted(cats):
+        sheet_name = cat_name[:31]
+        _write_detail_sheet(wb, cats[cat_name], sheet_name)
 
     wb.save(output_path)
     logger.info(f"Excel 导出完成: {output_path}")
     return output_path
 
 
-def _write_detail_sheet(wb, devices: list[Device]) -> None:
-    ws = wb.active
-    ws.title = "分类明细"
+def _write_detail_sheet(wb, devices: list[Device], title: str = "分类明细") -> None:
+    ws = wb.create_sheet(title)
 
     # 表头
     for col_idx, header in enumerate(DETAIL_HEADERS, 1):
@@ -86,12 +96,18 @@ def _write_summary_sheet(wb, devices: list[Device]) -> None:
     # 按分类统计
     from collections import defaultdict
     cat_types = defaultdict(int)
+    cat_qty = defaultdict(int)
+    cat_t = defaultdict(int)
+    cat_b = defaultdict(int)
     cat_qtys = defaultdict(float)
     for dev in devices:
         cat_types[dev.classification] += 1
+        cat_qty[dev.classification] += dev.quantity
+        cat_t[dev.classification] += dev.t_side_count
+        cat_b[dev.classification] += dev.b_side_count
         cat_qtys[dev.classification] += dev.converted_qty
 
-    headers = ["分类", "器件种类数", "总件数"]
+    headers = ["分类", "器件行数", "总数量", "T面件数", "B面件数", "折算后件数"]
     for col_idx, header in enumerate(headers, 1):
         cell = ws.cell(row=1, column=col_idx, value=header)
         cell.fill = HEADER_FILL
@@ -106,9 +122,18 @@ def _write_summary_sheet(wb, devices: list[Device]) -> None:
         ws.cell(row=row, column=2, value=cat_types[cat]).font = CELL_FONT
         ws.cell(row=row, column=2).border = THIN_BORDER
         ws.cell(row=row, column=2).alignment = CENTER
-        ws.cell(row=row, column=3, value=round(cat_qtys[cat], 2)).font = CELL_FONT
+        ws.cell(row=row, column=3, value=cat_qty[cat]).font = CELL_FONT
         ws.cell(row=row, column=3).border = THIN_BORDER
         ws.cell(row=row, column=3).alignment = CENTER
+        ws.cell(row=row, column=4, value=cat_t[cat]).font = CELL_FONT
+        ws.cell(row=row, column=4).border = THIN_BORDER
+        ws.cell(row=row, column=4).alignment = CENTER
+        ws.cell(row=row, column=5, value=cat_b[cat]).font = CELL_FONT
+        ws.cell(row=row, column=5).border = THIN_BORDER
+        ws.cell(row=row, column=5).alignment = CENTER
+        ws.cell(row=row, column=6, value=round(cat_qtys[cat], 2)).font = CELL_FONT
+        ws.cell(row=row, column=6).border = THIN_BORDER
+        ws.cell(row=row, column=6).alignment = CENTER
         row += 1
 
     # 合计行
@@ -118,8 +143,17 @@ def _write_summary_sheet(wb, devices: list[Device]) -> None:
     ws.cell(row=row, column=2, value=sum(cat_types.values())).font = total_font
     ws.cell(row=row, column=2).border = THIN_BORDER
     ws.cell(row=row, column=2).alignment = CENTER
-    ws.cell(row=row, column=3, value=round(sum(cat_qtys.values()), 2)).font = total_font
+    ws.cell(row=row, column=3, value=sum(cat_qty.values())).font = total_font
     ws.cell(row=row, column=3).border = THIN_BORDER
     ws.cell(row=row, column=3).alignment = CENTER
+    ws.cell(row=row, column=4, value=sum(cat_t.values())).font = total_font
+    ws.cell(row=row, column=4).border = THIN_BORDER
+    ws.cell(row=row, column=4).alignment = CENTER
+    ws.cell(row=row, column=5, value=sum(cat_b.values())).font = total_font
+    ws.cell(row=row, column=5).border = THIN_BORDER
+    ws.cell(row=row, column=5).alignment = CENTER
+    ws.cell(row=row, column=6, value=round(sum(cat_qtys.values()), 2)).font = total_font
+    ws.cell(row=row, column=6).border = THIN_BORDER
+    ws.cell(row=row, column=6).alignment = CENTER
 
     # 使用默认列宽
