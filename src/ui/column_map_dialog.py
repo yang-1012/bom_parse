@@ -17,6 +17,13 @@ from PySide6.QtWidgets import (
 
 logger = logging.getLogger("ParseApp")
 
+class _NoWheelComboBox(QComboBox):
+    """阻止鼠标滚轮改变选中项"""
+
+    def wheelEvent(self, event):
+        event.ignore()
+
+
 _STANDARD_FIELDS = [
     "器件编码",
     "器件描述",
@@ -63,7 +70,7 @@ class ColumnMapDialog(QDialog):
             self._table.setItem(i, 0, item)
 
             # 右列：下拉选择
-            combo = QComboBox()
+            combo = _NoWheelComboBox()
             combo.addItems(options)
 
             # 预填：已有映射则选中对应标准字段，否则"不导入此列"

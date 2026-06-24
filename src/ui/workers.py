@@ -208,6 +208,10 @@ class ClassifyWorker(QThread):
         refdes = device.refdes
         if not refdes:
             return
+        if not coord_lookup:
+            device.t_side_count = 0
+            device.b_side_count = 0
+            return
 
         ref_list = _split_refdes(refdes)
         t_count = 0
