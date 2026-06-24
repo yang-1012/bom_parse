@@ -131,6 +131,58 @@ def _read_csv_flexible(file_path: str, encoding: str, sep: str) -> pd.DataFrame:
     return df
 
 
+def _find_header_candidates(
+    file_path: str, sheet_name: str, alias_map: dict,
+    max_rows: int = 50
+) -> list[int]:
+    """返回候选表头行索引列表，按别名匹配得分降序排列，并垫底0-11确保全覆盖"""
+    df_head = pd.read_excel(
+        file_path, sheet_name=sheet_name, dtype=str,
+        header=None, nrows=max_rows, keep_default_na=False,
+    )
+
+    scored: list[tuple[int, int]] = []
+    for row_idx in range(len(df_head)):
+        row = df_head.iloc[row_idx]
+        if row.isna().all():
+            scored.append((row_idx, -1))
+            continue
+        score = 0
+        seen_fields = set()
+        for cell in row:
+            cell_str = str(cell).strip()
+            if cell_str.lower() in ("nan", "nat", "none", "null", ""):
+                continue
+            matched = _match_column(cell_str, alias_map)
+            if matched and matched not in seen_fields:
+                score += 1
+                seen_fields.add(matched)
+        scored.append((row_idx, score))
+
+    # 按得分降序排列
+    scored.sort(key=lambda x: -x[1])
+
+    # 构建有序候选列表：得分高的在前，垫底 0-11 确保不遗漏
+    ordered: list[int] = []
+    seen_indices: set[int] = set()
+    for row_idx, _ in scored:
+        if row_idx not in seen_indices and row_idx < 20:
+            ordered.append(row_idx)
+            seen_indices.add(row_idx)
+
+    for i in range(12):
+        if i not in seen_indices:
+            ordered.append(i)
+            seen_indices.add(i)
+
+    # 去重
+    result: list[int] = []
+    for i in ordered:
+        if i not in result:
+            result.append(i)
+    return result[:15]
+
+
 def parse_bom(file_path: str, field_aliases: dict) -> tuple[list[dict], dict]:
     """解析 BOM 文件 (支持 CSV/TXT/Excel)
 
@@ -139,8 +191,10 @@ def parse_bom(file_path: str, field_aliases: dict) -> tuple[list[dict], dict]:
     """
     ext = file_path.lower()[file_path.rfind("."):]
 
+    alias_map = _build_alias_map(field_aliases)
+
     if ext in _EXCEL_EXT:
-        return _parse_excel(file_path, field_aliases)
+        return _parse_excel(file_path, alias_map)
 
     encoding = detect_encoding(file_path)
     sep = _detect_separator(file_path, encoding)
@@ -151,7 +205,6 @@ def parse_bom(file_path: str, field_aliases: dict) -> tuple[list[dict], dict]:
     df.columns = [str(c).strip() for c in df.columns]
     logger.info(f"BOM 文件加载: {len(df)} 行, 列: {list(df.columns)}")
 
-    alias_map = _build_alias_map(field_aliases)
     column_map = {}
 
     for col in df.columns:
@@ -164,36 +217,79 @@ def parse_bom(file_path: str, field_aliases: dict) -> tuple[list[dict], dict]:
     return devices_raw, column_map
 
 
-def _parse_excel(file_path: str, field_aliases: dict) -> tuple[list[dict], dict]:
-    """解析 Excel 文件"""
+def _parse_excel(file_path: str, alias_map: dict) -> tuple[list[dict], dict]:
+    """解析 Excel 文件：遍历所有 Sheet 和候选表头行，取列匹配结果最好的"""
     xls = pd.ExcelFile(file_path)
-    sheet_name = xls.sheet_names[0]
-    logger.info(f"Excel 文件, Sheet: '{sheet_name}'")
 
-    for skip in range(0, 15):
-        try:
-            df = pd.read_excel(
-                file_path, sheet_name=sheet_name, dtype=str, skiprows=skip
-            )
-            df = df.dropna(how="all").dropna(axis=1, how="all")
-            if len(df) > 0 and len(df.columns) > 1:
-                logger.info(f"Excel 读取成功 (skiprows={skip}, {len(df)} 行)")
-                break
-        except Exception:
+    best_devices: list[dict] = []
+    best_column_map: dict = {}
+    best_score = -1
+    best_sheet = ""
+    best_row = -1
+
+    for sheet_name in xls.sheet_names:
+        logger.info(f"Excel 文件, Sheet: '{sheet_name}'")
+        candidates = _find_header_candidates(file_path, sheet_name, alias_map)
+        logger.info(f"  候选表头行: {candidates}")
+
+        for header_row in candidates:
+            try:
+                df = pd.read_excel(
+                    file_path, sheet_name=sheet_name, dtype=str,
+                    skiprows=header_row, keep_default_na=False,
+                )
+                df = df.dropna(how="all").dropna(axis=1, how="all")
+                if len(df) == 0 or len(df.columns) <= 1:
+                    continue
+
+                df.columns = [str(c).strip() for c in df.columns]
+                column_map = {}
+                for col in df.columns:
+                    matched = _match_column(col, alias_map)
+                    if matched:
+                        column_map[col] = matched
+
+                score = len(column_map)
+
+                # 检查是否包含 Unnamed 列（可能是多出数据列而非错误表头）
+                unnamed_count = sum(
+                    1 for c in df.columns if c.startswith("Unnamed:")
+                )
+                if unnamed_count > 0 and score < 3:
+                    # 匹配列少且有 Unnamed 列 → 很可能是错误表头，大幅降权
+                    score = score - unnamed_count * 10
+                    logger.info(
+                        f"  header_row={header_row}: score={len(column_map)}, "
+                        f"unnamed={unnamed_count}, effective={score}"
+                    )
+                else:
+                    logger.info(
+                        f"  header_row={header_row}: score={score}, "
+                        f"cols={list(df.columns)}"
+                    )
+
+                if score > best_score:
+                    best_devices = df.to_dict(orient="records")
+                    best_column_map = column_map
+                    best_score = score
+                    best_sheet = sheet_name
+                    best_row = header_row
+
+                if score >= 3:  # 足够好，提前退出当前 Sheet
+                    logger.info(
+                        f"  选择表头行: {header_row} (score={score})"
+                    )
+                    break
+            except Exception:
+                continue
+        else:
+            # 内层循环正常结束(未 break)则继续下一个 sheet
             continue
-    else:
-        df = pd.read_excel(file_path, sheet_name=sheet_name, dtype=str)
+        # 内层循环 break 了，说明当前 sheet 已经找到足够好的匹配
+        break
 
-    df = df.dropna(how="all").dropna(axis=1, how="all")
-    df.columns = [str(c).strip() for c in df.columns]
-    logger.info(f"Excel 加载: {len(df)} 行, 列: {list(df.columns)}")
-
-    alias_map = _build_alias_map(field_aliases)
-    column_map = {}
-    for col in df.columns:
-        matched = _match_column(col, alias_map)
-        if matched:
-            column_map[col] = matched
-
-    devices_raw = df.to_dict(orient="records")
-    return devices_raw, column_map
+    logger.info(
+        f"最终选择: Sheet '{best_sheet}', 表头行: {best_row}, "
+        f"匹配列: {list(best_column_map.values())}"
+    )
+    return best_devices, best_column_map

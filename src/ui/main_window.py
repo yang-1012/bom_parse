@@ -7,6 +7,7 @@ import threading
 import pandas as pd
 from PySide6.QtCore import Qt, QTimer
 from PySide6.QtWidgets import (
+    QDialog,
     QFileDialog,
     QHBoxLayout,
     QLabel,
@@ -22,6 +23,7 @@ from PySide6.QtWidgets import (
 
 from src.models.device import Device
 from src.services.config_service import load_classification_rules, load_coefficients
+from src.ui.column_map_dialog import ColumnMapDialog
 from src.ui.coef_editor import CoefficientEditorDialog
 from src.ui.force_editor import ForceEditorDialog
 from src.ui.pin_editor import PinEditorDialog
@@ -155,10 +157,25 @@ class MainWindow(QMainWindow):
     def _on_bom_loaded(self, devices_raw: list[dict], column_map: dict):
         self._bom_raw = devices_raw
         self._bom_column_map = column_map
-        self._set_status(
-            f"BOM 加载完成: {len(devices_raw)} 条记录, "
-            f"匹配列: {list(column_map.values())}"
-        )
+
+        # 获取所有原始列名（已匹配 + 未匹配）
+        raw_columns = list(dict.fromkeys(
+            k for d in devices_raw for k in d.keys()
+        )) if devices_raw else list(column_map.keys())
+
+        # 弹出列映射确认对话框
+        dlg = ColumnMapDialog(column_map, raw_columns, self)
+        if dlg.exec() == QDialog.DialogCode.Accepted:
+            self._bom_column_map = dlg.get_column_map()
+            self._set_status(
+                f"BOM 加载完成: {len(devices_raw)} 条记录, "
+                f"匹配列: {list(self._bom_column_map.values())}"
+            )
+        else:
+            # 用户取消，清空数据
+            self._bom_raw = []
+            self._bom_column_map = {}
+            self._set_status("已取消 BOM 导入")
 
     def _on_import_coord(self):
         path, _ = QFileDialog.getOpenFileName(
